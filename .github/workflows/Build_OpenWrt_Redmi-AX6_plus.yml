@@ -79,7 +79,12 @@ jobs:
         echo "DATE1=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
         
     - name: revert mac80211:update to v6.1.24
-      run: cp -rf $GITHUB_WORKSPACE/general/revert_mac80211/package/kernel/* openwrt/package/kernel/
+      run: |
+        rm -rf openwrt/package/kernel/ath10k-ct/*
+        rm -rf openwrt/package/kernel/mac80211/*
+        rm -rf openwrt/package/kernel/mt76/*
+        rm -rf openwrt/package/kernel/mwlwifi/*
+        cp -rf $GITHUB_WORKSPACE/general/revert_mac80211/package/kernel/* openwrt/package/kernel/
         
     - name: Revert ax6
       run: cp -rf $GITHUB_WORKSPACE/general/AX6/target/linux/ipq807x/image/generic.mk openwrt/target/linux/ipq807x/image/
