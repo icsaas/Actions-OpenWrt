@@ -11,6 +11,12 @@ on:
   watch:
     types: started
   repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
 
 jobs:
   build:
@@ -38,13 +44,14 @@ jobs:
     - name: Clone packages
       run: |
         cd $GITHUB_WORKSPACE
-        git clone -b ${{matrix.target}} https://github.com/fichenx/OpenWrt.git ${{matrix.target}}
+        git clone -b ${{matrix.target}} https://github.com/fichenx/Actions-OpenWrt.git ${{matrix.target}}
         cd ${{matrix.target}}
         #git rm -r --cache * >/dev/null 2>&1 &
         #rm -rf `find ./* -maxdepth 0 -type d ! -name "diy"` >/dev/null 2>&1
-        svn export --force https://github.com/breakings/OpenWrt/trunk/general
-        svn export --force https://github.com/breakings/OpenWrt/trunk/PATCH
-        svn export --force https://github.com/breakings/OpenWrt/trunk/diy-part2.sh breakings_diy-part2.sh
+        rm -rf general
+        rm -rf PATCH
+        rm -rf sh/breakings_diy-part2.sh
+        git clone --depth 1 --filter=blob:none --no-checkout https://github.com/breakings/OpenWrt temp && cd temp && git checkout main -- general PATCH diy-part2.sh && cd .. && mv -n temp/general temp/PATCH ./ && mv -n temp/diy-part2.sh sh/breakings_diy-part2.sh ; rm -rf temp
 
     - name: Upload package
       env: 
@@ -55,7 +62,7 @@ jobs:
         cd $GITHUB_WORKSPACE/${{matrix.target}}
         git add .
         git commit -am "update $(date +%Y-%m-%d" "%H:%M:%S)"
-        git push --quiet "https://${{ secrets.ACCESS_TOKEN }}@github.com/fichenx/OpenWrt.git" HEAD:${{matrix.target}}
+        git push --quiet "https://${{ secrets.ACCESS_TOKEN }}@github.com/fichenx/Actions-OpenWrt.git" HEAD:${{matrix.target}}
                
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main

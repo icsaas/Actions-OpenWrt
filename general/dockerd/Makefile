@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dockerd
-PKG_VERSION:=24.0.2
+PKG_VERSION:=26.1.4
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
@@ -10,8 +10,8 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_GIT_URL:=github.com/moby/moby
 PKG_GIT_REF:=v$(PKG_VERSION)
 PKG_SOURCE_URL:=https://codeload.$(PKG_GIT_URL)/tar.gz/$(PKG_GIT_REF)?
-PKG_HASH:=f4bc7d7cc2ee3671371ae80fd624e61f0598e614b5c235012581f8ec1d593aa0
-PKG_GIT_SHORT_COMMIT:=659604f # SHA1 used within the docker executables
+PKG_HASH:=74d3f38f2b88399012e0b889e6408d81e2d198437deda71da6d1da72dcc8afcc
+PKG_GIT_SHORT_COMMIT:=de5c9cf # SHA1 used within the docker executables
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
 
@@ -33,9 +33,20 @@ define Package/dockerd
   CATEGORY:=Utilities
   TITLE:=Docker Community Edition Daemon
   URL:=https://www.docker.com/
-  DEPENDS:=$(GO_ARCH_DEPENDS) +btrfs-progs +ca-certificates +containerd +libdevmapper +tini \
-           +@KERNEL_NAMESPACES +KERNEL_SECCOMP:libseccomp +iptables-mod-extra +kmod-br-netfilter +kmod-ikconfig \
-           +kmod-nf-conntrack-netlink +kmod-nf-ipvs +kmod-nf-nat +kmod-veth
+  DEPENDS:=$(GO_ARCH_DEPENDS) \
+    +ca-certificates \
+    +containerd \
+    +iptables \
+    +iptables-mod-extra \
+    +IPV6:ip6tables \
+    +IPV6:kmod-ipt-nat6 \
+    +KERNEL_SECCOMP:libseccomp \
+    +kmod-ipt-nat \
+    +kmod-ipt-physdev \
+    +kmod-nf-ipvs \
+    +kmod-veth \
+    +tini \
+    @!(mips||mipsel)
   USERID:=docker:docker
   MENU:=1
 endef
@@ -48,7 +59,6 @@ define Package/dockerd/description
 The Docker CE Engine.
 endef
 
-GO_PKG_BUILD_VARS += GO111MODULE=auto
 TAR_OPTIONS:=--strip-components 1 $(TAR_OPTIONS)
 TAR_CMD=$(HOST_TAR) -C $(1) $(TAR_OPTIONS)
 TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lc -lgcc_eh)
@@ -132,11 +142,11 @@ define Package/dockerd/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bundles/binary-daemon/docker-proxy $(1)/usr/bin/
 
 	$(INSTALL_DIR) $(1)/opt/docker/
+
+  ifeq ($(CONFIG_DOCKER_CHECK_CONFIG),y)
 	$(INSTALL_DIR) $(1)/usr/share/docker/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/contrib/check-config.sh $(1)/usr/share/docker/
-
-	$(INSTALL_DIR) $(1)/etc/docker
-	$(INSTALL_CONF) ./files/daemon.json $(1)/etc/docker/
+  endif
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/dockerd.init $(1)/etc/init.d/dockerd
